@@ -22,8 +22,8 @@
 #include <arrow/array.h>
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    LOG(ERROR) << "There should be two arguments with paths to csv files";
+  if (argc < 2) {
+    LOG(ERROR) << "There should be one argument with count";
     return 1;
   }
 
@@ -31,23 +31,46 @@ int main(int argc, char *argv[]) {
   auto mpi_config = new cylon::net::MPIConfig();
   auto ctx = cylon::CylonContext::InitDistributed(mpi_config);
 
+  arrow::MemoryPool *pool = arrow::default_memory_pool();
   arrow::BinaryBuilder left_id_builder(pool);
   arrow::BinaryBuilder right_id_builder(pool);
   arrow::BinaryBuilder cost_builder(pool);
 
+  int count = std::stoi(argv[1]);
+  long range = count * ctx->GetWorldSize();
+  for (int i = 0; i < count; i++) {
+    long l = rand() % range;
+    long r = rand() % range;
+    long v = rand() % range;
+
+    arrow::Status st = left_id_builder.Append(reinterpret_cast<uint8_t *>(&l), 8);
+    st = right_id_builder.Append(reinterpret_cast<uint8_t *>(&r), 8);
+    st = cost_builder.Append(reinterpret_cast<uint8_t *>(&v), 8);
+  }
+
+  std::shared_ptr<arrow::Array> left_id_array;
+  arrow::Status st = left_id_builder.Finish(&left_id_array);
+  std::shared_ptr<arrow::Array> right_id_array;
+  st = right_id_builder.Finish(&right_id_array);
+
+  std::shared_ptr<arrow::Array> cost_array;
+  st = cost_builder.Finish(&cost_array);
+
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-      arrow::field("first", arrow::int64()), arrow::field("second", arrow::int64())};
+      arrow::field("first", arrow::binary()), arrow::field("second", arrow::binary())};
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
+  std::shared_ptr<arrow::Table> left_table = arrow::Table::Make(schema, {left_id_array, cost_array});
+  std::shared_ptr<arrow::Table> right_table = arrow::Table::Make(schema, {right_id_array, cost_array});
 
   std::shared_ptr<cylon::Table> first_table, second_table, joined;
-  auto status = cylon::Table::FromArrow(ctx, argv[1], first_table);
+  auto status = cylon::Table::FromArrowTable(ctx, left_table, &first_table);
   if (!status.is_ok()) {
     LOG(INFO) << "Table reading failed " << argv[1];
     ctx->Finalize();
     return 1;
   }
 
-  status = cylon::Table::FromCSV(ctx, argv[2], second_table, read_options);
+  status = cylon::Table::FromArrowTable(ctx, right_table, &second_table);
   if (!status.is_ok()) {
     LOG(INFO) << "Table reading failed " << argv[2];
     ctx->Finalize();

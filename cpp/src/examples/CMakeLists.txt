@@ -16,7 +16,7 @@ tx_add_exe(join_example)
 tx_add_exe(project_example)
 tx_add_exe(subtract_example)
 tx_add_exe(intersect_example)
-tx_add_exe(join_bench)
+tx_add_exe(join_bench_example)
 
 
 #macro(tx_add_test_exe EXENAME)
