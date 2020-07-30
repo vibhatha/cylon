@@ -11,10 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <glog/logging.h>
+
+#include <vector>
+#include <utility>
+#include <string>
+#include <memory>
 
 #include "arrow_all_to_all.hpp"
 
-#include <glog/logging.h>
 
 namespace cylon {
 ArrowAllToAll::ArrowAllToAll(cylon::CylonContext *ctx,
@@ -39,16 +44,18 @@ ArrowAllToAll::ArrowAllToAll(cylon::CylonContext *ctx,
 
   // add the trackers for sending
   for (auto t : targets) {
-    inputs_.insert(std::pair<int, std::shared_ptr<PendingSendTable>>(t, std::make_shared<PendingSendTable>()));
+    inputs_.insert(std::pair<int, std::shared_ptr<PendingSendTable>>(t,
+        std::make_shared<PendingSendTable>()));
   }
 
   for (auto t : source) {
-    receives_.insert(std::pair<int, std::shared_ptr<PendingReceiveTable>>(t, std::make_shared<PendingReceiveTable>()));
+    receives_.insert(std::pair<int, std::shared_ptr<PendingReceiveTable>>(t,
+        std::make_shared<PendingReceiveTable>()));
   }
 }
 
 int ArrowAllToAll::insert(const std::shared_ptr<arrow::Table> &arrow, int target) {
-  //todo: check weather we have enough memory
+  // todo: check weather we have enough memory
   // lets save the table into pending and move on
   std::shared_ptr<PendingSendTable> st = inputs_[target];
   st->pending.push(arrow);
@@ -74,9 +81,10 @@ bool ArrowAllToAll::isComplete() {
       int noOfColumns = t.second->currentTable->columns().size();
       bool canContinue = true;
       while (t.second->columnIndex < noOfColumns && canContinue) {
-        std::shared_ptr<arrow::ChunkedArray> cArr = t.second->currentTable->column(t.second->columnIndex);
+        std::shared_ptr<arrow::ChunkedArray> cArr = t.second->currentTable->column(
+            t.second->columnIndex);
 
-        unsigned long size = cArr->chunks().size();
+        uint64_t size = cArr->chunks().size();
         while (static_cast<size_t>(t.second->arrayIndex) < size && canContinue) {
           std::shared_ptr<arrow::Array> arr = cArr->chunk(t.second->arrayIndex);
 
@@ -90,9 +98,8 @@ bool ArrowAllToAll::isComplete() {
             hdr[3] = cArr->chunks().size();
             hdr[4] = data->length;
             // lets send this buffer, we need to send the length at this point
-            // const uint8_t *b = buf->data();
-            // LOG(INFO) << workerId_ <<  " Sent length " << (int) buf->size() << " last: " << (int) b[(int) buf->size() / 2 - 1];
-            bool accept = all_->insert((void *) buf->data(), (int) buf->size(), t.first, hdr, 5);
+            bool accept = all_->insert(buf->mutable_data(),
+                static_cast<int>(buf->size()), t.first, hdr, 5);
             if (!accept) {
               canContinue = false;
               break;
@@ -158,62 +165,42 @@ bool ArrowAllToAll::onReceive(int source, void *buffer, int length) {
   std::shared_ptr<PendingReceiveTable> table = receives_[source];
   receivedBuffers_++;
   // create the buffer hosting the value
-  std::shared_ptr<arrow::Buffer> buf = std::make_shared<arrow::Buffer>((uint8_t *) buffer, length);
-  debug(this->workerId_, "before push");
+  std::shared_ptr<arrow::Buffer> buf = std::make_shared<arrow::Buffer>(
+      static_cast<uint8_t *>(buffer), length);
   table->buffers.push_back(buf);
-  debug(this->workerId_, "after push");
   // now check weather we have the expected number of buffers received
   if (table->noBuffers == table->bufferIndex + 1) {
     // okay we are done with this array
     std::shared_ptr<arrow::ArrayData> data = arrow::ArrayData::Make(
         schema_->field(table->columnIndex)->type(), table->length, table->buffers);
     // clears the buffers
-    debug(this->workerId_, "before clear buffers");
     table->buffers.clear();
-    debug(this->workerId_, "after clear buffers");
     // create an array
     std::shared_ptr<arrow::Array> array = arrow::MakeArray(data);
-    debug(this->workerId_, "before push array");
     table->arrays.push_back(array);
-    debug(this->workerId_, "after push array");
 
     // we have received all the arrays of the chunk array
-    debug(this->workerId_, "before if");
     if (table->arrays.size() == static_cast<size_t>(table->noArray)) {
       std::shared_ptr<arrow::ChunkedArray> chunkedArray = std::make_shared<arrow::ChunkedArray>(
           table->arrays, schema_->field(table->columnIndex)->type());
       // clear the arrays
-      debug(this->workerId_, "before clear arrays");
       table->arrays.clear();
-      debug(this->workerId_, "after clear arrays");
-
-      debug(this->workerId_, "before push chunk array");
       table->currentArrays.push_back(chunkedArray);
-      debug(this->workerId_, "after push chunk array");
-
-      debug(this->workerId_, "before nested if");
       if (table->currentArrays.size() == static_cast<size_t>(schema_->num_fields())) {
         // now we can create the table
         std::shared_ptr<arrow::Table> tablePtr = arrow::Table::Make(schema_, table->currentArrays);
         // clear the current array
-        debug(this->workerId_, "before clear chunk arrays");
         table->currentArrays.clear();
-        debug(this->workerId_, "after clear chunk arrays");
-
-        debug(this->workerId_, "before call on recv");
         recv_callback_->onReceive(source, tablePtr);
-        debug(this->workerId_, "after call on recv");
       }
-      debug(this->workerId_, "after nested if");
     }
-    debug(this->workerId_, "after if");
   }
 
   return true;
 }
 
-bool ArrowAllToAll::onReceiveHeader(int source, int finished, int *buffer, int length) {
-  if (!finished) {
+bool ArrowAllToAll::onReceiveHeader(int source, int fin, int *buffer, int length) {
+  if (!fin) {
     if (length != 5) {
       LOG(FATAL) << "Incorrect length on header, expected 5 ints got " << length;
       return false;
@@ -236,4 +223,4 @@ bool ArrowAllToAll::onSendComplete(int target, void *buffer, int length) {
   return false;
 }
 
-}
+}  // namespace cylon

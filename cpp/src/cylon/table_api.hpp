@@ -100,6 +100,8 @@ int ColumnCount(const std::string &id);
 
 int64_t RowCount(const std::string &id);
 
+std::vector<std::string> ColumnNames(const std::string &id);
+
 /**
  * Print a table
  * @param table_id id of the table
@@ -171,5 +173,5 @@ Status Select(CylonContext *ctx,
               const std::string &out);
 
 Status Project(const std::string &id, const std::vector<int64_t>& project_columns, const std::string &out);
-}
+}  // namespace cylon
 #endif //CYLON_SRC_IO_TABLE_API_H_

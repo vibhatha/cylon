@@ -71,13 +71,18 @@ SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 SET(TEST_DATA_DIR ${CYLON_SOURCE_DIR}/data)
 
+# root include directory
+include_directories(src/cylon)
+
 # Find MPI
 find_package(MPI REQUIRED)
-include_directories(${MPI_CXX_INCLUDE_PATH})
+include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
 
 # glog
 option(WITH_GFLAGS "Use gflags" ON)
 SET(WITH_GFLAGS OFF)
+include(ConfigureGlog)
+include_directories(SYSTEM "${GLOG_INCLUDE_DIR}")
 
 # arrow
 include(ConfigureArrow)
@@ -87,7 +92,7 @@ if (ARROW_FOUND)
 else ()
     message(FATAL_ERROR "Apache Arrow not found, please check your settings.")
 endif (ARROW_FOUND)
-include_directories("${ARROW_INCLUDE_DIR}")
+include_directories(SYSTEM "${ARROW_INCLUDE_DIR}")
 
 ## Find Python
 find_package(PythonLibs REQUIRED)
@@ -96,15 +101,16 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 # Off if you dont want to build tests -- ON default
 option(CYLON_BUILD_TESTS "Build tests." ON)
 
-add_subdirectory(thirdparty/glog)
 add_subdirectory(src/cylon)
 add_subdirectory(src/examples)
-
-if (PYCYLON_BUILD)
-    add_subdirectory(src/examples/python)
-endif ()
 
 ## installing arrow files
 install(DIRECTORY ${CMAKE_BINARY_DIR}/arrow/install/include/arrow DESTINATION include)
 install(FILES ${CMAKE_BINARY_DIR}/arrow/install/lib/libarrow.so.16.0.0 DESTINATION lib)
 install(FILES ${CMAKE_BINARY_DIR}/arrow/install/lib/libarrow.a DESTINATION lib)
+
+if (CYLON_WITH_TEST)
+    message("Tests enabled!")
+    enable_testing()
+    add_subdirectory(test)
+endif()

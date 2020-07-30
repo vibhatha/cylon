@@ -12,43 +12,49 @@
  * limitations under the License.
  */
 
+#include "arrow_io.hpp"
+
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <arrow/csv/api.h>
+#include <memory>
 
-#include "arrow_io.hpp"
 #include "csv_read_config_holder.hpp"
 #include "../ctx/cylon_context.hpp"
 #include "../ctx/arrow_memory_pool_utils.hpp"
 
 namespace cylon {
 namespace io {
-arrow::Result<std::shared_ptr<arrow::Table>> read_csv(cylon::CylonContext *ctx,
-                                                      const std::string &path,
-                                                      cylon::io::config::CSVReadOptions options) {
+
+arrow::Result <std::shared_ptr<arrow::Table>> read_csv(cylon::CylonContext *ctx,
+                                                       const std::string &path,
+                                                       cylon::io::config::CSVReadOptions options) {
   arrow::Status st;
   auto *pool = cylon::ToArrowPool(ctx);
-  arrow::Result<std::shared_ptr<arrow::io::MemoryMappedFile>> mmap_result = arrow::io::MemoryMappedFile::Open(path,
-                                                                                                              arrow::io::FileMode::READ);
+  arrow::Result <std::shared_ptr<arrow::io::MemoryMappedFile>> mmap_result =
+      arrow::io::MemoryMappedFile::Open(path, arrow::io::FileMode::READ);
   if (!mmap_result.status().ok()) {
     return mmap_result.status();
   }
 
-  auto read_options = dynamic_cast<arrow::csv::ReadOptions *>(config::CSVConfigHolder::GetCastedHolder(options));
-  auto parse_options = dynamic_cast<arrow::csv::ParseOptions *>(config::CSVConfigHolder::GetCastedHolder(options));
-  auto convert_options = dynamic_cast<arrow::csv::ConvertOptions *>(config::CSVConfigHolder::GetCastedHolder(options));
+  auto read_options = dynamic_cast<arrow::csv::ReadOptions *>(
+      config::CSVConfigHolder::GetCastedHolder(options));
+  auto parse_options = dynamic_cast<arrow::csv::ParseOptions *>(
+      config::CSVConfigHolder::GetCastedHolder(options));
+  auto convert_options = dynamic_cast<arrow::csv::ConvertOptions *>(
+      config::CSVConfigHolder::GetCastedHolder(options));
 
   // Instantiate TableReader from input stream and options
-  std::shared_ptr<arrow::csv::TableReader> reader;
-  st = arrow::csv::TableReader::Make(pool, *mmap_result, *read_options,
-                                     *parse_options, *convert_options,
-                                     &reader);
-  if (!st.ok()) {
-    return arrow::Result<std::shared_ptr<arrow::Table>>(st);
+  arrow::Result <std::shared_ptr<arrow::csv::TableReader>> reader =
+      arrow::csv::TableReader::Make(pool, *mmap_result, *read_options,
+                                    *parse_options, *convert_options);
+  if (!reader.ok()) {
+    return arrow::Result < std::shared_ptr < arrow::Table >> (reader.status());
   }
 
   // Read table from CSV file
-  return reader->Read();
+  return (*reader)->Read();
 }
-}
-}
+
+}  // namespace io
+}  // namespace cylon
