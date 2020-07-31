@@ -47,14 +47,23 @@ int main(int argc, char *argv[]) {
   /* Distribution on which to apply the generator */
   uint64_t range = count * ctx->GetWorldSize();
   std::uniform_int_distribution<uint64_t> distribution(0, range);
+  uint8_t lb[8];
+  uint8_t rb[8];
+  uint8_t vb[8];
   for (int i = 0; i < count; i++) {
     uint64_t l = distribution(generator);
     uint64_t r = distribution(generator);
     uint64_t v = distribution(generator);
 
-    arrow::Status st = left_id_builder.Append(reinterpret_cast<uint8_t *>(&l), 8);
-    st = right_id_builder.Append(reinterpret_cast<uint8_t *>(&r), 8);
-    st = cost_builder.Append(reinterpret_cast<uint8_t *>(&v), 8);
+    for (int i = 0; i < 8; i++) {
+      lb[7 - i] = (l >> (i * 8));
+      rb[7 - i] = (r >> (i * 8));
+      vb[7 - i] = (v >> (i * 8));
+    }
+
+    arrow::Status st = left_id_builder.Append(lb, 8);
+    st = right_id_builder.Append(rb, 8);
+    st = cost_builder.Append(vb, 8);
   }
 
   std::shared_ptr<arrow::Array> left_id_array;
