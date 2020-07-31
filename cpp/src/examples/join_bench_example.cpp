@@ -20,6 +20,7 @@
 #include <arrow/api.h>
 #include <arrow/array/builder_primitive.h>
 #include <arrow/array.h>
+#include <random>
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -37,11 +38,19 @@ int main(int argc, char *argv[]) {
   arrow::BinaryBuilder cost_builder(pool);
 
   int count = std::stoi(argv[1]);
+  /* Seed */
+  std::random_device rd;
+
+  /* Random number generator */
+  std::default_random_engine generator(rd());
+
+  /* Distribution on which to apply the generator */
+  std::uniform_int_distribution<long unsigned> distribution(0,0xFFFFFFFFFFFFFFFF);
   long range = count * ctx->GetWorldSize();
   for (int i = 0; i < count; i++) {
-    long l = rand() % range + rand() % range;
-    long r = rand() % range + rand() % range;
-    long v = rand() % range + rand() % range;
+    long l = distribution(generator);
+    long r = distribution(generator);
+    long v = distribution(generator);
 
     arrow::Status st = left_id_builder.Append(reinterpret_cast<uint8_t *>(&l), 8);
     st = right_id_builder.Append(reinterpret_cast<uint8_t *>(&r), 8);
