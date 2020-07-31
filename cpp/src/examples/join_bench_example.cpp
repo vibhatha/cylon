@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
   arrow::BinaryBuilder right_id_builder(pool);
   arrow::BinaryBuilder cost_builder(pool);
 
-  int count = std::stoi(argv[1]);
+  uint64_t count = std::stoull(argv[1]);
   /* Seed */
   std::random_device rd;
 
