@@ -45,12 +45,12 @@ int main(int argc, char *argv[]) {
   std::default_random_engine generator(rd());
 
   /* Distribution on which to apply the generator */
-  long range = count * ctx->GetWorldSize();
-  std::uniform_int_distribution<long unsigned> distribution(0, range);
+  uint64_t range = count * ctx->GetWorldSize();
+  std::uniform_int_distribution<uint64_t> distribution(0, range);
   for (int i = 0; i < count; i++) {
-    long l = distribution(generator);
-    long r = distribution(generator);
-    long v = distribution(generator);
+    uint64_t l = distribution(generator);
+    uint64_t r = distribution(generator);
+    uint64_t v = distribution(generator);
 
     arrow::Status st = left_id_builder.Append(reinterpret_cast<uint8_t *>(&l), 8);
     st = right_id_builder.Append(reinterpret_cast<uint8_t *>(&r), 8);
