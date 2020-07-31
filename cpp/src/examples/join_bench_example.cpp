@@ -52,9 +52,9 @@ int main(int argc, char *argv[]) {
   uint8_t vb[8];
   uint64_t max = 0;
   for (int i = 0; i < count; i++) {
-    uint64_t l = distribution(generator);
-    uint64_t r = distribution(generator);
-    uint64_t v = distribution(generator);
+    uint64_t l = distribution(generator) + ctx->GetWorldSize();
+    uint64_t r = distribution(generator) + ctx->GetWorldSize();
+    uint64_t v = distribution(generator) + ctx->GetWorldSize();
 
     if (l > max) {
       max = l;
