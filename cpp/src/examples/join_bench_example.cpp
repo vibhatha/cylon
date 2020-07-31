@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     st = cost_builder.Append(vb, 8);
   }
 
-  std::cout << "****** MAX *************** " << max << std::endl;
+  std::cout << "****** MAX *************** " << max << " range " << range << std::endl;
 
   std::shared_ptr<arrow::Array> left_id_array;
   arrow::Status st = left_id_builder.Finish(&left_id_array);
