@@ -22,6 +22,16 @@
 #include <arrow/array.h>
 #include <random>
 
+template< typename T > std::array< uint8_t, sizeof(T) >  to_bytes( const T& object ){
+  std::array< uint8_t, sizeof(T) > bytes ;
+
+  const uint8_t* begin = reinterpret_cast< const uint8_t* >( std::addressof(object) ) ;
+  const uint8_t* end = begin + sizeof(T) ;
+  std::copy( begin, end, std::begin(bytes) ) ;
+
+  return bytes ;
+}
+
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     LOG(ERROR) << "There should be one argument with count";
@@ -65,9 +75,9 @@ int main(int argc, char *argv[]) {
       vb[i] = (v >> (i * 8)) & 0XFF;
     }
 
-    arrow::Status st = left_id_builder.Append(lb, 8);
-    st = right_id_builder.Append(rb, 8);
-    st = cost_builder.Append(vb, 8);
+    arrow::Status st = left_id_builder.Append(reinterpret_cast< const uint8_t* >( std::addressof(lb)), 8);
+    st = right_id_builder.Append(reinterpret_cast< const uint8_t* >( std::addressof(rb)), 8);
+    st = cost_builder.Append(reinterpret_cast< const uint8_t* >(std::addressof(vb)), 8);
   }
 
   std::cout << "****** MAX *************** " << max << " range " << range << " " << count << "X" << ctx->GetWorldSize() << std::endl;
