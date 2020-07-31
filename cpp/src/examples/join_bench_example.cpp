@@ -21,6 +21,9 @@
 #include <arrow/array/builder_primitive.h>
 #include <arrow/array.h>
 #include <random>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 
 template< typename T > std::array< uint8_t, sizeof(T) >  to_bytes( const T& object ){
   std::array< uint8_t, sizeof(T) > bytes ;
@@ -30,6 +33,23 @@ template< typename T > std::array< uint8_t, sizeof(T) >  to_bytes( const T& obje
   std::copy( begin, end, std::begin(bytes) ) ;
 
   return bytes ;
+}
+
+unsigned long long Randomize() {
+  unsigned long long randnumber = 0;
+  int digits[20];
+
+  for (int i = 19; i >= 1; i--) {
+    digits[i]=rand()%10;
+  }
+  for(int i=19; i>=1; i--) {
+    unsigned long long power = pow(10, i-1);
+    if (power%2 != 0 && power != 1) {
+      power++;
+    }
+    randnumber += power * digits[i];
+  }
+  return randnumber;
 }
 
 int main(int argc, char *argv[]) {
@@ -52,7 +72,7 @@ int main(int argc, char *argv[]) {
   std::random_device rd;
 
   /* Random number generator */
-  std::default_random_engine generator(rd() + ctx->GetWorldSize());
+  std::default_random_engine generator(rd() + ctx->GetRank());
 
   /* Distribution on which to apply the generator */
   uint64_t range = count * ctx->GetWorldSize();
@@ -61,10 +81,12 @@ int main(int argc, char *argv[]) {
   uint8_t rb[8];
   uint8_t vb[8];
   uint64_t max = 0;
+  srand(time(NULL) + ctx->GetRank());
+
   for (int i = 0; i < count; i++) {
-    uint64_t l = distribution(generator);
-    uint64_t r = distribution(generator);
-    uint64_t v = distribution(generator);
+    uint64_t l = Randomize() % range;
+    uint64_t r = Randomize() % range;
+    uint64_t v = Randomize() % range;
 
     if (l > max) {
       max = l;
@@ -75,9 +97,9 @@ int main(int argc, char *argv[]) {
       vb[i] = (v >> (i * 8)) & 0XFF;
     }
 
-    arrow::Status st = left_id_builder.Append(reinterpret_cast< const uint8_t* >( std::addressof(lb)), 8);
-    st = right_id_builder.Append(reinterpret_cast< const uint8_t* >( std::addressof(rb)), 8);
-    st = cost_builder.Append(reinterpret_cast< const uint8_t* >(std::addressof(vb)), 8);
+    arrow::Status st = left_id_builder.Append(lb, 8);
+    st = right_id_builder.Append(rb, 8);
+    st = cost_builder.Append(vb, 8);
   }
 
   std::cout << "****** MAX *************** " << max << " range " << range << " " << count << "X" << ctx->GetWorldSize() << std::endl;
