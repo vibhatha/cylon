@@ -60,9 +60,9 @@ int main(int argc, char *argv[]) {
       max = l;
     }
     for (int i = 0; i < 8; i++) {
-      lb[7 - i] = (l >> (i * 8)) & 0XFF;
-      rb[7 - i] = (r >> (i * 8)) & 0XFF;
-      vb[7 - i] = (v >> (i * 8)) & 0XFF;
+      lb[i] = (l >> (i * 8)) & 0XFF;
+      rb[i] = (r >> (i * 8)) & 0XFF;
+      vb[i] = (v >> (i * 8)) & 0XFF;
     }
 
     arrow::Status st = left_id_builder.Append(lb, 8);
