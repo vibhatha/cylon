@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
   std::default_random_engine generator(rd());
 
   /* Distribution on which to apply the generator */
-  std::uniform_int_distribution<long unsigned> distribution(0,0xFFFFFFFFFFFFFFFF);
   long range = count * ctx->GetWorldSize();
+  std::uniform_int_distribution<long unsigned> distribution(0, range);
   for (int i = 0; i < count; i++) {
     long l = distribution(generator);
     long r = distribution(generator);
