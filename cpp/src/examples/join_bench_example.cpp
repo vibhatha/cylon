@@ -39,9 +39,9 @@ int main(int argc, char *argv[]) {
   int count = std::stoi(argv[1]);
   long range = count * ctx->GetWorldSize();
   for (int i = 0; i < count; i++) {
-    long l = rand() % range;
-    long r = rand() % range;
-    long v = rand() % range;
+    long l = rand() % range + rand() % range;
+    long r = rand() % range + rand() % range;
+    long v = rand() % range + rand() % range;
 
     arrow::Status st = left_id_builder.Append(reinterpret_cast<uint8_t *>(&l), 8);
     st = right_id_builder.Append(reinterpret_cast<uint8_t *>(&r), 8);
