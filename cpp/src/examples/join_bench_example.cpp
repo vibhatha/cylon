@@ -50,11 +50,15 @@ int main(int argc, char *argv[]) {
   uint8_t lb[8];
   uint8_t rb[8];
   uint8_t vb[8];
+  uint64_t max = 0;
   for (int i = 0; i < count; i++) {
     uint64_t l = distribution(generator);
     uint64_t r = distribution(generator);
     uint64_t v = distribution(generator);
 
+    if (l > max) {
+      max = l;
+    }
     for (int i = 0; i < 8; i++) {
       lb[7 - i] = (l >> (i * 8));
       rb[7 - i] = (r >> (i * 8));
@@ -65,6 +69,8 @@ int main(int argc, char *argv[]) {
     st = right_id_builder.Append(rb, 8);
     st = cost_builder.Append(vb, 8);
   }
+
+  std::cout << "****** MAX *************** " << max << std::endl;
 
   std::shared_ptr<arrow::Array> left_id_array;
   arrow::Status st = left_id_builder.Finish(&left_id_array);
