@@ -18,7 +18,6 @@
 #include <table.hpp>
 #include <chrono>
 #include <arrow/api.h>
-#include <arrow/array/builder_primitive.h>
 #include <arrow/array.h>
 #include <random>
 #include <stdlib.h>
@@ -63,9 +62,9 @@ int main(int argc, char *argv[]) {
   auto ctx = cylon::CylonContext::InitDistributed(mpi_config);
 
   arrow::MemoryPool *pool = arrow::default_memory_pool();
-  arrow::BinaryBuilder left_id_builder(pool);
-  arrow::BinaryBuilder right_id_builder(pool);
-  arrow::BinaryBuilder cost_builder(pool);
+  arrow::FixedSizeBinaryBuilder left_id_builder(arrow::fixed_size_binary(8), pool);
+  arrow::FixedSizeBinaryBuilder right_id_builder(arrow::fixed_size_binary(8), pool);
+  arrow::FixedSizeBinaryBuilder cost_builder(arrow::fixed_size_binary(8), pool);
 
   uint64_t count = std::stoull(argv[1]);
   /* Seed */
@@ -97,9 +96,9 @@ int main(int argc, char *argv[]) {
       vb[i] = (v >> (i * 8)) & 0XFF;
     }
 
-    arrow::Status st = left_id_builder.Append(lb, 8);
-    st = right_id_builder.Append(rb, 8);
-    st = cost_builder.Append(vb, 8);
+    arrow::Status st = left_id_builder.Append(lb);
+    st = right_id_builder.Append(rb);
+    st = cost_builder.Append(vb);
   }
 
   std::cout << "****** MAX *************** " << max << " range " << range << " " << count << "X" << ctx->GetWorldSize() << std::endl;
@@ -113,7 +112,7 @@ int main(int argc, char *argv[]) {
   st = cost_builder.Finish(&cost_array);
 
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-      arrow::field("first", arrow::binary()), arrow::field("second", arrow::binary())};
+      arrow::field("first", arrow::fixed_size_binary(8)), arrow::field("second", arrow::fixed_size_binary(8))};
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
   std::shared_ptr<arrow::Table> left_table = arrow::Table::Make(schema, {left_id_array, cost_array});
   std::shared_ptr<arrow::Table> right_table = arrow::Table::Make(schema, {right_id_array, cost_array});
@@ -137,7 +136,7 @@ int main(int argc, char *argv[]) {
   LOG(INFO) << "Read tables in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(read_end_time - start_start).count() << "[ms]";
 
-  status = first_table->DistributedJoin(second_table,
+  status = first_table->Join(second_table,
                                         cylon::join::config::JoinConfig::InnerJoin(0, 0), &joined);
   if (!status.is_ok()) {
     LOG(INFO) << "Table join failed ";
