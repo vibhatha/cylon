@@ -48,7 +48,7 @@ Status Table::FromArrowTable(const std::shared_ptr<arrow::Table> &table) {
 }
 
 Status Table::FromArrowTable(cylon::CylonContext *ctx,
-                             const std::shared_ptr<arrow::Table> &table,
+                             std::shared_ptr<arrow::Table> table,
                              std::shared_ptr<Table> *tableOut) {
   if (!cylon::tarrow::validateArrowTableTypes(table)) {
     LOG(FATAL) << "Types not supported";

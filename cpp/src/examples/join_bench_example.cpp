@@ -118,14 +118,14 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<arrow::Table> right_table = arrow::Table::Make(schema, {std::move(right_id_array), std::move(cost_array)});
 
   std::shared_ptr<cylon::Table> first_table, second_table, joined;
-  auto status = cylon::Table::FromArrowTable(ctx, left_table, &first_table);
+  auto status = cylon::Table::FromArrowTable(ctx, std::move(left_table), &first_table);
   if (!status.is_ok()) {
     LOG(INFO) << "Table reading failed " << argv[1];
     ctx->Finalize();
     return 1;
   }
 
-  status = cylon::Table::FromArrowTable(ctx, right_table, &second_table);
+  status = cylon::Table::FromArrowTable(ctx, std::move(right_table), &second_table);
   if (!status.is_ok()) {
     LOG(INFO) << "Table reading failed " << argv[2];
     ctx->Finalize();
