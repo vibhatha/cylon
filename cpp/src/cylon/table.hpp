@@ -138,7 +138,7 @@ class Table {
    * @param output
    * @return <cylon::Status>
    */
-  Status DistributedJoin(const shared_ptr<Table> &right,
+  static Status DistributedJoin(const shared_ptr<Table> &left, const shared_ptr<Table> &right,
                          cylon::join::config::JoinConfig join_config,
                          std::shared_ptr<Table> *output);
 

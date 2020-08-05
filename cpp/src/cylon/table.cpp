@@ -145,14 +145,14 @@ Status Table::ToArrowTable(std::shared_ptr<arrow::Table> &out) {
   return Status::OK();
 }
 
-Status Table::DistributedJoin(const shared_ptr<Table> &right,
+Status Table::DistributedJoin(const shared_ptr<Table> &left, const shared_ptr<Table> &right,
                               cylon::join::config::JoinConfig join_config,
                               std::shared_ptr<Table> *out) {
   std::string uuid = cylon::util::generate_uuid_v4();
-  cylon::Status status = cylon::DistributedJoinTables(this->ctx, this->id_,
+  cylon::Status status = cylon::DistributedJoinTables(left->ctx, left->id_,
       right->id_, join_config, uuid);
   if (status.is_ok()) {
-    *out = std::make_shared<Table>(uuid, this->ctx);
+    *out = std::make_shared<Table>(uuid, left->ctx);
   }
   return status;
 }

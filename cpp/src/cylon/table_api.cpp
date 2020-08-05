@@ -221,6 +221,7 @@ Status Shuffle(CylonContext *ctx,
 
   // partition the tables locally
   HashPartition(ctx, table_id, hash_columns, ctx->GetWorldSize(), &partitioned_tables);
+  cylon::RemoveTable(table_id);
 
   auto neighbours = ctx->GetNeighbours(true);
 
