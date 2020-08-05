@@ -271,13 +271,13 @@ Status Shuffle(CylonContext *ctx,
   }
 
   // now we have the final set of tables
-  LOG(INFO) << "Concatenating tables, Num of tables :  " << received_tables.size();
+  DLOG(INFO) << "Concatenating tables, Num of tables :  " << received_tables.size();
   arrow::Result<std::shared_ptr<arrow::Table>> concat_tables =
       arrow::ConcatenateTables(received_tables);
 
   if (concat_tables.ok()) {
     auto final_table = concat_tables.ValueOrDie();
-    LOG(INFO) << "Done concatenating tables, rows :  " << final_table->num_rows();
+    DLOG(INFO) << "Done concatenating tables, rows :  " << final_table->num_rows();
     auto status = final_table->CombineChunks(cylon::ToArrowPool(ctx), table_out);
     return Status(static_cast<int>(status.code()), status.message());
   } else {
@@ -293,12 +293,12 @@ Status ShuffleTwoTables(CylonContext *ctx,
                         const std::vector<int> &right_hash_columns,
                         std::shared_ptr<arrow::Table> *left_table_out,
                         std::shared_ptr<arrow::Table> *right_table_out) {
-  LOG(INFO) << "Shuffling two tables with total rows : "
+  DLOG(INFO) << "Shuffling two tables with total rows : "
             << GetTable(left_table_id)->num_rows() + GetTable(right_table_id)->num_rows();
   auto status = Shuffle(ctx, left_table_id, left_hash_columns,
       ctx->GetNextSequence(), left_table_out);
   if (status.is_ok()) {
-    LOG(INFO) << "Left table shuffled";
+    DLOG(INFO) << "Left table shuffled";
     return Shuffle(ctx, right_table_id, right_hash_columns,
         ctx->GetNextSequence(), right_table_out);
   }
@@ -344,6 +344,8 @@ Status DistributedJoinTables(CylonContext *ctx,
                                          &left_final_table,
                                          &right_final_table);
 
+  left.reset();
+  right.reset();
   if (shuffle_status.is_ok()) {
     // now do the local join
     std::shared_ptr<arrow::Table> table;
@@ -770,7 +772,7 @@ Status Subtract(CylonContext *ctx,
 
   auto t2 = std::chrono::steady_clock::now();
 
-  LOG(INFO) << "Adding to Set took "
+  DLOG(INFO) << "Adding to Set took "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "ms";
 
   std::shared_ptr<std::vector<int64_t>> left_indices = std::make_shared<std::vector<int64_t>>();

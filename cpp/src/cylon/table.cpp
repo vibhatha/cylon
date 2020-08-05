@@ -205,6 +205,7 @@ void Table::Clear() {
 }
 
 Table::~Table() {
+  LOG(INFO) << "Clear table " << id_;
   this->Clear();
 }
 
