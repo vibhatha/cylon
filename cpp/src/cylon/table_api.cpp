@@ -68,6 +68,7 @@ std::string PutTable(const std::shared_ptr<arrow::Table> &table) {
 }
 
 void RemoveTable(const std::string &id) {
+  LOG(INFO) << "Remove table";
   table_map.erase(id);
 }
 

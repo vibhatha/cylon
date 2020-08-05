@@ -145,14 +145,17 @@ Status Table::ToArrowTable(std::shared_ptr<arrow::Table> &out) {
   return Status::OK();
 }
 
-Status Table::DistributedJoin(const shared_ptr<Table> &left, const shared_ptr<Table> &right,
+Status Table::DistributedJoin(shared_ptr<Table> left, shared_ptr<Table> right,
                               cylon::join::config::JoinConfig join_config,
                               std::shared_ptr<Table> *out) {
   std::string uuid = cylon::util::generate_uuid_v4();
-  cylon::Status status = cylon::DistributedJoinTables(left->ctx, left->id_,
-      right->id_, join_config, uuid);
+  CylonContext *kCtx = left->ctx;
+  std::string &kLeft = left->id_;
+  std::string &kRight = right->id_;
+  cylon::Status status = cylon::DistributedJoinTables(kCtx, kLeft,
+                                                      kRight, join_config, uuid);
   if (status.is_ok()) {
-    *out = std::make_shared<Table>(uuid, left->ctx);
+    *out = std::make_shared<Table>(uuid, kCtx);
   }
   return status;
 }
@@ -205,8 +208,7 @@ void Table::Clear() {
 }
 
 Table::~Table() {
-  LOG(INFO) << "Clear table " << id_;
-  this->Clear();
+  LOG(INFO) << "Clear table ";
 }
 
 Status Table::FromCSV(cylon::CylonContext *ctx, const vector<std::string> &paths,

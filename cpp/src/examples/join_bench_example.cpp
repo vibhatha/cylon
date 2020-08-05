@@ -132,13 +132,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   auto read_end_time = std::chrono::steady_clock::now();
-  left_table = nullptr;
-  right_table = nullptr;
-
   LOG(INFO) << "Read tables in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(read_end_time - start_start).count() << "[ms]";
 
-  status = cylon::Table::DistributedJoin(first_table, second_table,
+  status = cylon::Table::DistributedJoin(std::move(first_table), std::move(second_table),
                                         cylon::join::config::JoinConfig::InnerJoin(0, 0), &joined);
   if (!status.is_ok()) {
     LOG(INFO) << "Table join failed ";
@@ -147,8 +144,7 @@ int main(int argc, char *argv[]) {
   }
   auto join_end_time = std::chrono::steady_clock::now();
 
-  LOG(INFO) << "First table had : " << first_table->Rows() << " and Second table had : "
-            << second_table->Rows() << ", Joined has : " << joined->Rows();
+  LOG(INFO) << "Joined has : " << joined->Rows();
   LOG(INFO) << "Join done in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(join_end_time - read_end_time).count() << "[ms]";
   ctx->Finalize();

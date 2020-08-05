@@ -275,7 +275,7 @@ arrow::Status do_hash_join(const std::shared_ptr<arrow::Table> &left_tab,
     return arrow::Status::Invalid("Hash join failed!");
   }
 
-  LOG(INFO) << "Combine chunks time : "
+  DLOG(INFO) << "Combine chunks time : "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t22 - t11).count();
 
   // sort columns
@@ -295,8 +295,6 @@ arrow::Status do_hash_join(const std::shared_ptr<arrow::Table> &left_tab,
 
   auto result = ArrowArrayIdxHashJoinKernel<ARROW_ARRAY_TYPE, CPP_KEY_TYPE>()
       .IdxHashJoin(left_idx_column, right_idx_column, join_type, left_indices, right_indices);
-//  left_indices->shrink_to_fit();
-//  right_indices->shrink_to_fit();
   auto t2 = std::chrono::high_resolution_clock::now();
 
   if (result) {
@@ -304,9 +302,9 @@ arrow::Status do_hash_join(const std::shared_ptr<arrow::Table> &left_tab,
     return arrow::Status::Invalid("Index join failed!");
   }
 
-  LOG(INFO) << "Index join time : "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-  LOG(INFO) << "Building final table with number of tuples - " << left_indices->size();
+  DLOG(INFO) << "Index join time : "
+             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+  DLOG(INFO) << "Building final table with number of tuples - " << left_indices->size();
 
   t1 = std::chrono::high_resolution_clock::now();
 
