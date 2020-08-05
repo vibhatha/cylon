@@ -114,8 +114,8 @@ int main(int argc, char *argv[]) {
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
       arrow::field("first", arrow::fixed_size_binary(8)), arrow::field("second", arrow::fixed_size_binary(8))};
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
-  std::shared_ptr<arrow::Table> left_table = arrow::Table::Make(schema, {left_id_array, cost_array});
-  std::shared_ptr<arrow::Table> right_table = arrow::Table::Make(schema, {right_id_array, cost_array});
+  std::shared_ptr<arrow::Table> left_table = arrow::Table::Make(schema, {std::move(left_id_array), cost_array});
+  std::shared_ptr<arrow::Table> right_table = arrow::Table::Make(schema, {std::move(right_id_array), std::move(cost_array)});
 
   std::shared_ptr<cylon::Table> first_table, second_table, joined;
   auto status = cylon::Table::FromArrowTable(ctx, left_table, &first_table);
@@ -132,6 +132,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   auto read_end_time = std::chrono::steady_clock::now();
+  left_table = nullptr;
+  right_table = nullptr;
 
   LOG(INFO) << "Read tables in "
             << std::chrono::duration_cast<std::chrono::milliseconds>(read_end_time - start_start).count() << "[ms]";
