@@ -718,9 +718,3 @@ def test_isin_with_getitem():
     assert pdf1.values.tolist() == tb1.to_pandas().values.tolist()
     assert tb1.index.values.tolist() ==  pdf1.index.values.tolist()
 
-
-
-
-
-
-test_isin_with_getitem()

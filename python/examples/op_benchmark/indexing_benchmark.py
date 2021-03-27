@@ -17,13 +17,14 @@ Run benchmark:
                                         --num_cols 2 \
                                         --stats_file /tmp/indexing_bench.csv \
                                         --duplication_factor 0.9 \
-                                        --repetitions 1
+                                        --repetitions 5
 """
 
 
 def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     ctx: cn.CylonContext = cn.CylonContext(config=None, distributed=False)
     pdf = get_dataframe(num_rows=num_rows, num_cols=num_cols, duplication_factor=duplication_factor)
+    pdf1 = pdf.copy()
     filter_column = pdf.columns[0]
     filter_column_data = pdf[pdf.columns[0]]
     random_index = np.random.randint(low=0, high=pdf.shape[0])
@@ -35,6 +36,9 @@ def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     pdf_indexing_time = time.time()
     pdf.set_index(filter_column, drop=True, inplace=True)
     pdf_indexing_time = time.time() - pdf_indexing_time
+    pdf_eval_indexing_time = time.time()
+    pdf1 = pd.eval("pdf1.set_index(filter_column, drop=True)")
+    pdf_eval_indexing_time = time.time() - pdf_eval_indexing_time
 
     cylon_filter_time = time.time()
     tb_filter = tb.loc[filter_value]
@@ -44,14 +48,19 @@ def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     pdf_filtered = pdf.loc[filter_value]
     pandas_filter_time = time.time() - pandas_filter_time
 
-    return pandas_filter_time, cylon_filter_time, pdf_indexing_time, cylon_indexing_time
+    pandas_eval_filter_time = time.time()
+    pdf_filtered_eval = pd.eval("pdf1.loc[filter_value]")
+    pandas_eval_filter_time = time.time() - pandas_eval_filter_time
+
+    return pandas_filter_time, cylon_filter_time, pandas_eval_filter_time, pdf_indexing_time, cylon_indexing_time, pdf_eval_indexing_time
 
 
 def bench_indexing_op(start: int, end: int, step: int, num_cols: int, repetitions: int, stats_file: str,
                       duplication_factor: float):
     all_data = []
-    schema = ["num_records", "num_cols", "pandas_loc", "cylon_loc", "speed up loc", "pandas_indexing", "cylon_indexing",
-              "speed up indexing"]
+    schema = ["num_records", "num_cols", "pandas_loc", "cylon_loc", "pandas_eval_loc", "speed up loc",
+              "speed up loc(eval)", "pandas_indexing", "cylon_indexing",
+              "pdf_eval_indexing", "speed up indexing", "speed up indexing(eval)"]
     assert repetitions >= 1
     assert start > 0
     assert step > 0
@@ -59,17 +68,20 @@ def bench_indexing_op(start: int, end: int, step: int, num_cols: int, repetition
     for records in range(start, end + step, step):
         times = []
         for idx in range(repetitions):
-            pandas_filter_time, cylon_filter_time, pdf_indexing_time, cylon_indexing_time = indexing_op(
+            pandas_filter_time, cylon_filter_time, pandas_eval_filter_time, pdf_indexing_time, cylon_indexing_time, pdf_eval_indexing_time = indexing_op(
                 num_rows=records, num_cols=num_cols,
                 duplication_factor=duplication_factor)
-            times.append([pandas_filter_time, cylon_filter_time, pdf_indexing_time, cylon_indexing_time])
+            times.append(
+                [pandas_filter_time, cylon_filter_time, pandas_eval_filter_time, pdf_indexing_time, cylon_indexing_time,
+                 pdf_eval_indexing_time])
         times = np.array(times).sum(axis=0) / repetitions
         print(
             f"Loc Op : Records={records}, Columns={num_cols}, Pandas Loc Time : {times[0]}, "
             f"Cylon Loc Time : {times[1]}, "
             f"Pandas Indexing Time : {times[2]}, Cylon Indexing Time : {times[3]}")
         all_data.append(
-            [records, num_cols, times[0], times[1], times[0] / times[1], times[2], times[3], times[2] / times[3]])
+            [records, num_cols, times[0], times[1], times[2], times[0] / times[1], times[2] / times[1], times[3],
+             times[4], times[5], times[3] / times[4], times[5] / times[4]])
     pdf = pd.DataFrame(all_data, columns=schema)
     print(pdf)
     pdf.to_csv(stats_file)
