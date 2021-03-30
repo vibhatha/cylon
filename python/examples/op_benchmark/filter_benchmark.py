@@ -31,7 +31,7 @@ Run benchmark:
                                         --end_size 10_000_000 \
                                         --num_cols 2 \
                                         --stats_file /tmp/filter_bench.csv \
-                                        --repetitions 1 \
+                                        --repetitions 5 \
                                         --duplication_factor 0.9
 """
 
@@ -101,7 +101,7 @@ def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
     ctx: CylonContext = CylonContext(config=None, distributed=False)
 
     pdf = get_dataframe(num_rows=num_rows, num_cols=num_cols, duplication_factor=duplication_factor)
-    filter_column  = pdf.columns[0]
+    filter_column = pdf.columns[0]
     filter_column_data = pdf[pdf.columns[0]]
     random_index = np.random.randint(low=0, high=pdf.shape[0])
     filter_value = filter_column_data.values[random_index]
@@ -123,14 +123,24 @@ def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
     pdf_filtered = pdf[pdf_filter]
     pandas_filter_time = time.time() - pandas_filter_time
 
-    return pandas_filter_cr_time, pandas_filter_time, cylon_filter_cr_time, cylon_filter_time
+    pandas_eval_filter_cr_time = time.time()
+    pdf_filter = pd.eval("pdf[filter_column] > filter_value")
+    pandas_eval_filter_cr_time = time.time() - pandas_eval_filter_cr_time
+
+    pandas_eval_filter_time = time.time()
+    pdf_filtered = pd.eval("pdf[pdf_filter]")
+    pandas_eval_filter_time = time.time() - pandas_eval_filter_time
+
+    return pandas_filter_cr_time, pandas_eval_filter_cr_time, cylon_filter_cr_time, pandas_filter_time, pandas_eval_filter_time, cylon_filter_time
 
 
 def bench_filter_op(start: int, end: int, step: int, num_cols: int, repetitions: int, stats_file: str,
                     duplication_factor: float):
     all_data = []
-    schema = ["num_records", "num_cols", "pandas_filter_cr", "cylon_filter_cr", "pandas_filter",
-              "cylon_filter", "speed up filter cr", "speed up filter"]
+    schema = ["num_records", "num_cols", "pandas_filter_cr", "pandas_eval_filter_cr", "cylon_filter_cr",
+              "pandas_filter",
+              "pandas_eval_filter", "cylon_filter", "speed up filter cr", "speed up filter",
+              "speed up filter cr [eval]", "speed up filter [eval]"]
     assert repetitions >= 1
     assert start > 0
     assert step > 0
@@ -138,16 +148,18 @@ def bench_filter_op(start: int, end: int, step: int, num_cols: int, repetitions:
     for records in range(start, end + step, step):
         times = []
         for idx in range(repetitions):
-            pandas_filter_cr_time, pandas_filter_time, cylon_filter_cr_time, cylon_filter_time = filter_op(
+            pandas_filter_cr_time, pandas_eval_filter_cr_time, cylon_filter_cr_time, pandas_filter_time, pandas_eval_filter_time, cylon_filter_time = filter_op(
                 num_rows=records, num_cols=num_cols,
                 duplication_factor=duplication_factor)
-            times.append([pandas_filter_cr_time, pandas_filter_time, cylon_filter_cr_time, cylon_filter_time])
+            times.append([pandas_filter_cr_time, pandas_eval_filter_cr_time, cylon_filter_cr_time, pandas_filter_time,
+                          pandas_eval_filter_time, cylon_filter_time])
         times = np.array(times).sum(axis=0) / repetitions
         print(f"Filter Op : Records={records}, Columns={num_cols}"
               f"Pandas Filter Creation Time : {times[0]}, Cylon Filter Creation Time : {times[2]}, "
               f"Pandas Filter Time : {times[1]}, Cylon Filter Time : {times[3]}")
         all_data.append(
-            [records, num_cols, times[0], times[2], times[1], times[3], times[0] / times[2], times[1] / times[3]])
+            [records, num_cols, times[0], times[1], times[2], times[3], times[4], times[5], times[0] / times[2],
+             times[1] / times[2], times[3] / times[5], times[4] / times[5]])
     pdf = pd.DataFrame(all_data, columns=schema)
     print(pdf)
     pdf.to_csv(stats_file)
