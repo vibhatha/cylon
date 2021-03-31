@@ -22,6 +22,8 @@ from pycylon import CylonContext
 from bench_util import get_dataframe
 import time
 import argparse
+from operator import le, ge, gt, lt, eq, ne
+
 
 """
 Run benchmark:
@@ -97,7 +99,7 @@ def fixed_filter_bench():
     print(f"PyArrow Table Creation : {t_ar_e_2 - t_ar_e}")
 
 
-def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
+def filter_op(num_rows: int, num_cols: int, duplication_factor: float, op=le):
     ctx: CylonContext = CylonContext(config=None, distributed=False)
 
     pdf = get_dataframe(num_rows=num_rows, num_cols=num_cols, duplication_factor=duplication_factor)
@@ -108,7 +110,7 @@ def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
     tb = Table.from_pandas(ctx, pdf)
 
     cylon_filter_cr_time = time.time()
-    tb_filter = tb[filter_column] > filter_value
+    tb_filter = op(tb[filter_column], filter_value)
     cylon_filter_cr_time = time.time() - cylon_filter_cr_time
 
     cylon_filter_time = time.time()
@@ -116,15 +118,15 @@ def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
     cylon_filter_time = time.time() - cylon_filter_time
 
     pandas_filter_cr_time = time.time()
-    pdf_filter = pdf[filter_column] > filter_value
+    pdf_filter = op(pdf[filter_column], filter_value)  # pdf[filter_column] > filter_value
     pandas_filter_cr_time = time.time() - pandas_filter_cr_time
 
     pandas_filter_time = time.time()
     pdf_filtered = pdf[pdf_filter]
     pandas_filter_time = time.time() - pandas_filter_time
-
+    pdf[filter_column]
     pandas_eval_filter_cr_time = time.time()
-    pdf_filter = pd.eval("pdf[filter_column] > filter_value")
+    pdf_filter = pd.eval("op(pdf[filter_column], filter_value)")
     pandas_eval_filter_cr_time = time.time() - pandas_eval_filter_cr_time
 
     pandas_eval_filter_time = time.time()
@@ -135,7 +137,7 @@ def filter_op(num_rows: int, num_cols: int, duplication_factor: float):
 
 
 def bench_filter_op(start: int, end: int, step: int, num_cols: int, repetitions: int, stats_file: str,
-                    duplication_factor: float):
+                    duplication_factor: float, op=None):
     all_data = []
     schema = ["num_records", "num_cols", "pandas_filter_cr", "pandas_eval_filter_cr", "cylon_filter_cr",
               "pandas_filter",
@@ -150,7 +152,7 @@ def bench_filter_op(start: int, end: int, step: int, num_cols: int, repetitions:
         for idx in range(repetitions):
             pandas_filter_cr_time, pandas_eval_filter_cr_time, cylon_filter_cr_time, pandas_filter_time, pandas_eval_filter_time, cylon_filter_time = filter_op(
                 num_rows=records, num_cols=num_cols,
-                duplication_factor=duplication_factor)
+                duplication_factor=duplication_factor, op=op)
             times.append([pandas_filter_cr_time, pandas_eval_filter_cr_time, cylon_filter_cr_time, pandas_filter_time,
                           pandas_eval_filter_time, cylon_filter_time])
         times = np.array(times).sum(axis=0) / repetitions
@@ -191,6 +193,9 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--stats_file",
                         help="stats file to be saved",
                         type=str)
+    parser.add_argument("-o", "--op",
+                        help="operator",
+                        type=str)
 
     args = parser.parse_args()
     print(f"Start Data Size : {args.start_size}")
@@ -200,10 +205,17 @@ if __name__ == '__main__':
     print(f"Number of Columns : {args.num_cols}")
     print(f"Number of Repetitions : {args.repetitions}")
     print(f"Stats File : {args.stats_file}")
+    op_type = args.op
+
+    ops = {'le': le, 'ge': ge, 'gt': gt, 'lt': lt, 'eq': eq, 'ne': ne}
+
+    op = ops[op_type]
+
     bench_filter_op(start=args.start_size,
                     end=args.end_size,
                     step=args.step_size,
                     num_cols=args.num_cols,
                     repetitions=args.repetitions,
                     stats_file=args.stats_file,
-                    duplication_factor=args.duplication_factor)
+                    duplication_factor=args.duplication_factor,
+                    op=op)
