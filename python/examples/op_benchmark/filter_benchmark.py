@@ -35,6 +35,7 @@ Run benchmark:
                                         --stats_file /tmp/filter_bench.csv \
                                         --repetitions 5 \
                                         --duplication_factor 0.9
+                                        --op le
 """
 
 
