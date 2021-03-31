@@ -82,19 +82,19 @@ def math_op(num_rows: int, num_cols: int, duplication_factor: float, op=add):
     filter_column = pdf.columns[0]
     filter_column_data = pdf[pdf.columns[0]]
     random_index = np.random.randint(low=0, high=pdf.shape[0])
-    filter_value = filter_column_data.values[random_index]
+    math_value = filter_column_data.values[random_index]
     tb = Table.from_pandas(ctx, pdf)
 
     cylon_math_op_time = time.time()
-    tb_filter = op(tb[filter_column], filter_value)
+    tb_filter = op(tb[filter_column], math_value)
     cylon_math_op_time = time.time() - cylon_math_op_time
 
     pandas_math_op_time = time.time()
-    pdf_filter = op(pdf[filter_column], filter_value)  # pdf[filter_column] > filter_value
+    pdf_filter = op(pdf[filter_column], math_value)  # pdf[filter_column] > filter_value
     pandas_math_op_time = time.time() - pandas_math_op_time
 
     pandas_eval_math_op_time = time.time()
-    pdf_filter = pd.eval("op(pdf[filter_column], filter_value)")
+    pdf_filter = pd.eval("op(pdf[filter_column], math_value)")
     pandas_eval_math_op_time = time.time() - pandas_eval_math_op_time
 
     return pandas_math_op_time, pandas_eval_math_op_time, cylon_math_op_time
