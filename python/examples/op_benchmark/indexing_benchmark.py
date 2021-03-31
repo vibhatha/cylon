@@ -52,6 +52,13 @@ def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     pdf_filtered_eval = pd.eval("pdf1.loc[filter_value]")
     pandas_eval_filter_time = time.time() - pandas_eval_filter_time
 
+    del pdf
+    del pdf1
+    del tb
+    del tb_filter
+    del pdf_filtered
+    del pdf_filtered_eval
+
     return pandas_filter_time, cylon_filter_time, pandas_eval_filter_time, pdf_indexing_time, cylon_indexing_time, pdf_eval_indexing_time
 
 
