@@ -115,10 +115,10 @@ def bench_math_op(start: int, end: int, step: int, num_cols: int, repetitions: i
             pandas_math_op_time, pandas_eval_math_op_time, cylon_math_op_time = math_op(
                 num_rows=records, num_cols=num_cols,
                 duplication_factor=duplication_factor, op=op)
-            times.append([cylon_math_op_time, pandas_math_op_time, pandas_eval_math_op_time])
+            times.append([pandas_math_op_time, pandas_eval_math_op_time, cylon_math_op_time])
         times = np.array(times).sum(axis=0) / repetitions
         print(f"Filter Op : Records={records}, Columns={num_cols}"
-              f"Pandas Math Op Time : {times[0]}, PyCylon Math Op Time : {times[1]}, "
+              f"Pandas Math Op Time : {times[0]}, Pandas Math Op Time : {times[1]}, "
               f"PyCylon Math Op Time : {times[2]}")
         all_data.append(
             [records, num_cols, times[0], times[1], times[2], times[0] / times[2], times[1] / times[2]])
