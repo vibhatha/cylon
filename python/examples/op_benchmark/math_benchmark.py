@@ -24,7 +24,6 @@ import argparse
 from bench_util import get_dataframe
 from operator import add, sub, mul, truediv
 
-
 """
 Run benchmark:
 
@@ -76,7 +75,8 @@ def math_op_base():
 
 
 def math_op(num_rows: int, num_cols: int, duplication_factor: float, op=add):
-    ctx: CylonContext = CylonContext(config=None, distributed=False)
+    ctx: CylonContext = CylonContext(config=None, distributed=False, compute_engine='numpy')
+    ctx.add_config("compute_engine", "numpy")
 
     pdf = get_dataframe(num_rows=num_rows, num_cols=num_cols, duplication_factor=duplication_factor)
     filter_column = pdf.columns[0]
@@ -84,6 +84,8 @@ def math_op(num_rows: int, num_cols: int, duplication_factor: float, op=add):
     random_index = np.random.randint(low=0, high=pdf.shape[0])
     math_value = filter_column_data.values[random_index]
     tb = Table.from_pandas(ctx, pdf)
+
+    print("Table Context Compute Engine: ", tb.context.compute_engine)
 
     cylon_math_op_time = time.time()
     tb_filter = op(tb[filter_column], math_value)

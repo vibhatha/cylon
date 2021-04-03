@@ -12,7 +12,7 @@ cylon::Status cylon::IndexUtil::BuildHashIndex(const std::shared_ptr<Table> &inp
 
   if (table_->column(0)->num_chunks() > 1) {
     const arrow::Result<std::shared_ptr<arrow::Table>> &res = table_->CombineChunks(cylon::ToArrowPool(ctx));
-    RETURN_CYLON_STATUS_IF_ARROW_FAILED(res.status())
+    RETURN_CYLON_STATUS_IF_ARROW_FAILED(res.status());
     table_ = res.ValueOrDie();
   }
 
@@ -87,11 +87,26 @@ cylon::Status cylon::IndexUtil::BuildHashIndexFromArray(std::shared_ptr<arrow::A
                                                                                                          index);;
     case arrow::Type::BINARY:break;
     case arrow::Type::FIXED_SIZE_BINARY:break;
-    case arrow::Type::DATE32:break;
-    case arrow::Type::DATE64:break;
-    case arrow::Type::TIMESTAMP:break;
-    case arrow::Type::TIME32:break;
-    case arrow::Type::TIME64:break;
+    case arrow::Type::DATE32:
+      return cylon::IndexUtil::BuildHashIndexFromArrowArray<arrow::Date32Type>(index_values,
+                                                                               pool,
+                                                                               index);
+    case arrow::Type::DATE64:
+      return cylon::IndexUtil::BuildHashIndexFromArrowArray<arrow::Date64Type>(index_values,
+                                                                               pool,
+                                                                               index);
+    case arrow::Type::TIMESTAMP:
+      return cylon::IndexUtil::BuildHashIndexFromArrowArray<arrow::TimestampType>(index_values,
+                                                                               pool,
+                                                                               index);
+    case arrow::Type::TIME32:
+      return cylon::IndexUtil::BuildHashIndexFromArrowArray<arrow::Time32Type>(index_values,
+                                                                               pool,
+                                                                               index);
+    case arrow::Type::TIME64:
+      return cylon::IndexUtil::BuildHashIndexFromArrowArray<arrow::Time64Type>(index_values,
+                                                                               pool,
+                                                                               index);
     case arrow::Type::INTERVAL_MONTHS:break;
     case arrow::Type::INTERVAL_DAY_TIME:break;
     case arrow::Type::DECIMAL:break;
@@ -189,11 +204,26 @@ cylon::Status cylon::IndexUtil::BuildLinearIndexFromArray(std::shared_ptr<arrow:
                                                                                                            index);;
     case arrow::Type::BINARY:break;
     case arrow::Type::FIXED_SIZE_BINARY:break;
-    case arrow::Type::DATE32:break;
-    case arrow::Type::DATE64:break;
-    case arrow::Type::TIMESTAMP:break;
-    case arrow::Type::TIME32:break;
-    case arrow::Type::TIME64:break;
+    case arrow::Type::DATE32:
+      return cylon::IndexUtil::BuildLinearIndexFromArrowArray<arrow::Date32Type>(index_values,
+                                                                                pool,
+                                                                                index);
+    case arrow::Type::DATE64:
+      return cylon::IndexUtil::BuildLinearIndexFromArrowArray<arrow::Date64Type>(index_values,
+                                                                                pool,
+                                                                                index);
+    case arrow::Type::TIMESTAMP:
+      return cylon::IndexUtil::BuildLinearIndexFromArrowArray<arrow::TimestampType>(index_values,
+                                                                                pool,
+                                                                                index);
+    case arrow::Type::TIME32:
+      return cylon::IndexUtil::BuildLinearIndexFromArrowArray<arrow::Time32Type>(index_values,
+                                                                                pool,
+                                                                                index);
+    case arrow::Type::TIME64:
+      return cylon::IndexUtil::BuildLinearIndexFromArrowArray<arrow::Time64Type>(index_values,
+                                                                                pool,
+                                                                                index);
     case arrow::Type::INTERVAL_MONTHS:break;
     case arrow::Type::INTERVAL_DAY_TIME:break;
     case arrow::Type::DECIMAL:break;
