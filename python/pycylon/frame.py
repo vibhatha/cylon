@@ -14,7 +14,7 @@
 
 
 from __future__ import annotations
-from typing import Hashable, List, Dict, Literal, Optional, Sequence, Union, Final
+from typing import Hashable, List, Dict, Optional, Sequence, Union
 from copy import copy
 from collections.abc import Iterable
 import pycylon as cn
@@ -28,7 +28,7 @@ from pycylon.io import CSVReadOptions
 
 from pycylon import CylonContext
 
-DEVICE_CPU: Final = "cpu"
+DEVICE_CPU = "cpu"
 
 
 class CylonEnv(object):
@@ -1101,7 +1101,7 @@ class DataFrame(object):
         self,
         level: Optional[Union[Hashable, Sequence[Hashable]]] = ...,
         drop: bool = ...,
-        inplace: Literal[False] = ...,
+        inplace: bool = ...,
         col_level: Hashable = ...,
         col_fill=...,
     ) -> DataFrame:
