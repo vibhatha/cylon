@@ -29,10 +29,12 @@ def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     filter_column_data = pdf[pdf.columns[0]]
     random_index = np.random.randint(low=0, high=pdf.shape[0])
     filter_value = filter_column_data.values[random_index]
-    filter_values = filter_column_data.values.tolist()[0:pdf.shape[0] // 2]
+    filter_col_ar = np.unique(filter_column_data.values)
+    limit = int(filter_col_ar.shape[0] * 0.90)
+    filter_values = filter_col_ar.tolist()[0:limit]
     tb = Table.from_pandas(ctx, pdf)
     cylon_indexing_time = time.time()
-    tb.set_index(filter_column, indexing_type=IndexingType.LINEAR, drop=True)
+    tb.set_index(filter_column, indexing_type=IndexingType.HASH, drop=True)
     cylon_indexing_time = time.time() - cylon_indexing_time
     pdf_indexing_time = time.time()
     pdf.set_index(filter_column, drop=True, inplace=True)
@@ -46,7 +48,8 @@ def indexing_op(num_rows: int, num_cols: int, duplication_factor: float):
     pdf_filtered = pdf.loc[filter_values]
     pandas_filter_time = time.time() - pandas_filter_time
 
-    print(tb_filter.shape, pdf_filtered.shape)
+    print(tb_filter.shape, pdf_filtered.shape, tb.shape, pdf.shape)
+    assert tb_filter.to_pandas().values.flatten().tolist() == pdf_filtered.values.flatten().tolist()
 
     return pandas_filter_time, cylon_filter_time, pdf_indexing_time, cylon_indexing_time
 
