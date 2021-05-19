@@ -30,6 +30,8 @@ def indexing_op(num_rows: int, num_cols: int, unique_factor: float):
     random_index = np.random.randint(low=0, high=pdf.shape[0])
     filter_value = filter_column_data.values[random_index]
     filter_values = filter_column_data.values.tolist()[0:pdf.shape[0] // 2]
+    filter_values = np.unique(np.array(filter_values)).tolist()
+
     tb = Table.from_pandas(ctx, pdf)
     cylon_indexing_time = time.time()
     tb.set_index(filter_column, indexing_type=IndexingType.LINEAR, drop=True)
